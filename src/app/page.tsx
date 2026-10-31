@@ -1,94 +1,138 @@
-import { Activity, Database, MapPin, Shield, Users } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Calendar,
+  Database,
+  Settings,
+  Shield,
+  Sparkles,
+} from "lucide-react";
+import { getEventsAction } from "@/features/events/services/events-actions";
+import { getAppConfigAction } from "@/features/config/services/config-actions";
 
-export default function HomePage() {
-  const systemCards = [
-    {
-      title: "Territory Management",
-      description: "Inspect polygon boundaries, verify territory claims, and resolve conflicts.",
-      icon: MapPin,
-      status: "Ready",
-    },
-    {
-      title: "User Administration",
-      description: "Manage trainer profiles, privileges, and audit active sessions.",
-      icon: Users,
-      status: "Configured",
-    },
-    {
-      title: "Database Sync",
-      description: "Direct connection to Firestore collections and future API routing.",
-      icon: Database,
-      status: "Active",
-    },
-    {
-      title: "System Audit & Security",
-      description: "Review administrative actions, role enforcement, and token integrity.",
-      icon: Shield,
-      status: "Protected",
-    },
-  ];
+export default async function DashboardPage() {
+  const [eventsRes, configRes] = await Promise.all([
+    getEventsAction(),
+    getAppConfigAction(),
+  ]);
+
+  const activeEventsCount = eventsRes.data.filter((e) => e.isActive).length;
+  const isMaintenanceOn = configRes.data.maintenanceMode;
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100">
-      <header className="border-b border-neutral-800 bg-neutral-900/50 backdrop-blur px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-semibold text-white">
-              PI
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight">Poke-Iring Admin</h1>
-              <p className="text-xs text-neutral-400">Operations & Management Console</p>
-            </div>
+    <div className="space-y-8">
+      {/* Welcome Banner */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800/80 pb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">
+            System Operations Dashboard
+          </h1>
+          <p className="mt-1 text-xs text-neutral-400">
+            Real-time management console for the Poke-Iring Flutter game environment.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border ${
+              isMaintenanceOn
+                ? "border-red-500/30 bg-red-500/10 text-red-400"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                isMaintenanceOn ? "bg-red-400" : "bg-emerald-400"
+              }`}
+            />
+            {isMaintenanceOn ? "Maintenance Mode Active" : "Game Servers Online"}
+          </span>
+        </div>
+      </div>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+          <div className="flex items-center justify-between text-neutral-400">
+            <span className="text-xs font-medium">Active Events</span>
+            <Calendar className="h-4 w-4 text-neutral-500" />
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-400">
-              <Activity className="h-3 w-3" />
-              Environment: Initializing
-            </span>
+          <div className="mt-3 text-2xl font-bold text-neutral-100">{activeEventsCount}</div>
+          <div className="mt-1 text-[11px] text-neutral-500">
+            {eventsRes.data.length} total scheduled events
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-6">
-        <section className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6">
-          <h2 className="text-lg font-semibold tracking-tight">System Baseline</h2>
-          <p className="mt-1 text-sm text-neutral-400">
-            Next.js App Router workspace initialized with Firebase Client and Admin integration templates.
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+          <div className="flex items-center justify-between text-neutral-400">
+            <span className="text-xs font-medium">Global Multiplier</span>
+            <Sparkles className="h-4 w-4 text-red-400" />
+          </div>
+          <div className="mt-3 text-2xl font-bold text-neutral-100">
+            {configRes.data.doublePointsGlobal ? "2.0x Active" : "1.0x Standard"}
+          </div>
+          <div className="mt-1 text-[11px] text-neutral-500">Paw points calculation</div>
+        </div>
+
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+          <div className="flex items-center justify-between text-neutral-400">
+            <span className="text-xs font-medium">Min App Version</span>
+            <Shield className="h-4 w-4 text-neutral-500" />
+          </div>
+          <div className="mt-3 text-2xl font-bold font-mono text-neutral-100">
+            v{configRes.data.minAppVersion}
+          </div>
+          <div className="mt-1 text-[11px] text-neutral-500">Enforced on startup</div>
+        </div>
+
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+          <div className="flex items-center justify-between text-neutral-400">
+            <span className="text-xs font-medium">Database Mode</span>
+            <Database className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div className="mt-3 text-2xl font-bold text-neutral-100">
+            {eventsRes.isConfigured ? "Production" : "Demonstration"}
+          </div>
+          <div className="mt-1 text-[11px] text-neutral-500">
+            {eventsRes.isConfigured ? "Direct Firestore write" : "Awaiting .env.local keys"}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Action Navigation Cards */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Link
+          href="/events"
+          className="group rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 transition-colors hover:border-neutral-700 hover:bg-neutral-900/60"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-200">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <ArrowRight className="h-4 w-4 text-neutral-500 transition-transform group-hover:translate-x-1 group-hover:text-neutral-200" />
+          </div>
+          <h2 className="mt-4 text-sm font-semibold text-neutral-100">Manage Game Events</h2>
+          <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
+            Create scheduled weekend raids, configure double paw points, and control start/end windows for mobile users.
           </p>
-        </section>
+        </Link>
 
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {systemCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={card.title}
-                className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/60 p-5 transition-colors hover:border-neutral-700"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-200">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="rounded-md border border-neutral-800 bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                      {card.status}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-sm font-semibold">{card.title}</h3>
-                  <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
-                    {card.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      </main>
-
-      <footer className="border-t border-neutral-900 px-6 py-4 text-center text-xs text-neutral-500">
-        Poke-Iring Admin Portal &middot; Confidential Internal Operations
-      </footer>
+        <Link
+          href="/config"
+          className="group rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 transition-colors hover:border-neutral-700 hover:bg-neutral-900/60"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-200">
+              <Settings className="h-5 w-5" />
+            </div>
+            <ArrowRight className="h-4 w-4 text-neutral-500 transition-transform group-hover:translate-x-1 group-hover:text-neutral-200" />
+          </div>
+          <h2 className="mt-4 text-sm font-semibold text-neutral-100">Remote App Configuration</h2>
+          <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
+            Toggle maintenance mode, broadcast urgent notices across active player screens, and enforce minimum client versions.
+          </p>
+        </Link>
+      </div>
     </div>
   );
 }

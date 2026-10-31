@@ -1,15 +1,23 @@
 import "server-only";
-import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-import { getStorage } from "firebase-admin/storage";
+import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage, type Storage } from "firebase-admin/storage";
 
 function formatPrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
   return key.replace(/\\n/g, "\n");
 }
 
-function initializeFirebaseAdmin() {
+export function isFirebaseAdminConfigured(): boolean {
+  return Boolean(
+    process.env.FIREBASE_ADMIN_PROJECT_ID &&
+    process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY
+  );
+}
+
+function initializeFirebaseAdmin(): App | null {
   const existingApps = getApps();
   if (existingApps.length > 0) {
     return getApp();
@@ -29,10 +37,21 @@ function initializeFirebaseAdmin() {
     });
   }
 
-  return initializeApp();
+  // If in cloud environment with default credentials
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE) {
+    try {
+      return initializeApp();
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
-export const adminApp = initializeFirebaseAdmin();
-export const adminAuth = getAuth(adminApp);
-export const adminDb = getFirestore(adminApp);
-export const adminStorage = getStorage(adminApp);
+const appInstance = initializeFirebaseAdmin();
+
+export const adminApp = appInstance;
+export const adminAuth = appInstance ? getAuth(appInstance) : (null as unknown as Auth);
+export const adminDb = appInstance ? getFirestore(appInstance) : (null as unknown as Firestore);
+export const adminStorage = appInstance ? getStorage(appInstance) : (null as unknown as Storage);

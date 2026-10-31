@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { AdminShell } from "@/components/layout/admin-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Poke-Iring Admin Portal",
-  description: "Management and administration portal for Poke-Iring.",
+  description: "Operations and management console for the Poke-Iring Flutter application.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full bg-neutral-950 text-neutral-100 antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full">
+        <AdminShell>{children}</AdminShell>
+      </body>
     </html>
   );
 }

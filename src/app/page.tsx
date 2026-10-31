@@ -30,8 +30,10 @@ export default async function DashboardPage() {
     getAppConfigAction(),
   ]);
 
-  const activeEventsCount = eventsRes.data.filter((e) => e.isActive).length;
-  const isMaintenanceOn = configRes.data.maintenanceMode;
+  const eventsList = eventsRes?.data || [];
+  const activeEventsCount = eventsList.filter((e) => e.isActive).length;
+  const isMaintenanceOn = Boolean(configRes?.data?.maintenanceMode);
+  const minVersion = configRes?.data?.minAppVersion || "1.0.0";
 
   const weeklyActivity = [
     { day: "Mon", sightings: 320, claims: 45, height: "45%" },
@@ -158,7 +160,7 @@ export default async function DashboardPage() {
                   {activeEventsCount} Active
                 </div>
                 <p className="text-[11px] text-neutral-400 mt-1">
-                  {eventsRes.data.length} total registered events
+                  {eventsList.length} total registered events
                 </p>
               </CardContent>
             </Card>
@@ -186,7 +188,7 @@ export default async function DashboardPage() {
                     {isMaintenanceOn ? "Access Locked" : "Full Access"}
                   </Badge>
                   <span className="text-[11px] text-neutral-500 font-mono">
-                    v{configRes.data.minAppVersion}
+                    v{minVersion}
                   </span>
                 </div>
               </CardContent>

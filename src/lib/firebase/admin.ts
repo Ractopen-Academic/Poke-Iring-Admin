@@ -1,8 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { getStorage, type Storage } from "firebase-admin/storage";
 
 function formatPrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
@@ -67,6 +65,4 @@ try {
 }
 
 export const adminApp = appInstance;
-export const adminAuth = appInstance ? getAuth(appInstance) : (null as unknown as Auth);
 export const adminDb = appInstance ? getFirestore(appInstance) : (null as unknown as Firestore);
-export const adminStorage = appInstance ? getStorage(appInstance) : (null as unknown as Storage);

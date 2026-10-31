@@ -10,6 +10,8 @@ import {
 import { getEventsAction } from "@/features/events/services/events-actions";
 import { getAppConfigAction } from "@/features/config/services/config-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const [eventsRes, configRes] = await Promise.all([
     getEventsAction(),

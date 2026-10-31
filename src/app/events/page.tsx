@@ -1,6 +1,8 @@
 import { getEventsAction } from "@/features/events/services/events-actions";
 import { EventsView } from "@/features/events/components/events-view";
 
+export const dynamic = "force-dynamic";
+
 export default async function EventsPage() {
   const result = await getEventsAction();
 

@@ -5,6 +5,16 @@ import { Calendar, Edit, Sparkles, Trash2 } from "lucide-react";
 import type { GameEvent } from "../types/event.types";
 import { deleteEventAction, toggleEventStatusAction } from "../services/events-actions";
 import { formatDateTime } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface EventTableProps {
   events: GameEvent[];
@@ -43,90 +53,94 @@ export function EventTable({ events, onEdit, onRefresh }: EventTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/40">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-neutral-800 bg-neutral-900/80 text-neutral-400 uppercase tracking-wider font-medium">
-            <tr>
-              <th className="px-5 py-3.5">Event</th>
-              <th className="px-5 py-3.5">Type & Multiplier</th>
-              <th className="px-5 py-3.5">Duration</th>
-              <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-800 text-neutral-300">
-            {events.map((event) => {
-              const starts = formatDateTime(event.startsAt);
-              const ends = formatDateTime(event.endsAt);
+    <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Event</TableHead>
+            <TableHead>Type & Multiplier</TableHead>
+            <TableHead>Duration</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {events.map((event) => {
+            const starts = formatDateTime(event.startsAt);
+            const ends = formatDateTime(event.endsAt);
 
-              return (
-                <tr key={event.id} className="hover:bg-neutral-800/30 transition-colors">
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-neutral-100">{event.title}</div>
-                    <div className="text-[11px] text-neutral-400 line-clamp-1 mt-0.5">
-                      {event.description}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 font-medium text-red-400">
-                        <Sparkles className="h-3 w-3" />
-                        {event.multiplier}x
-                      </span>
-                      <span className="capitalize text-neutral-400 text-[11px]">
-                        {event.eventType.replace("_", " ")}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-neutral-400 whitespace-nowrap">
-                    <div>{starts}</div>
-                    <div className="text-[11px] text-neutral-500">&rarr; {ends}</div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <button
-                      type="button"
-                      disabled={loadingId === event.id}
-                      onClick={() => handleToggle(event.id, event.isActive)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors ${
-                        event.isActive
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                          : "border-neutral-700 bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+            return (
+              <TableRow key={event.id}>
+                <TableCell>
+                  <div className="font-semibold text-neutral-100">{event.title}</div>
+                  <div className="text-[11px] text-neutral-400 line-clamp-1 mt-0.5">
+                    {event.description}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="destructive" className="gap-1 font-mono">
+                      <Sparkles className="h-3 w-3" />
+                      {event.multiplier}x
+                    </Badge>
+                    <span className="capitalize text-neutral-400 text-[11px]">
+                      {event.eventType.replace("_", " ")}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-neutral-400 whitespace-nowrap">
+                  <div>{starts}</div>
+                  <div className="text-[11px] text-neutral-500">&rarr; {ends}</div>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    type="button"
+                    variant={event.isActive ? "outline" : "secondary"}
+                    size="sm"
+                    disabled={loadingId === event.id}
+                    onClick={() => handleToggle(event.id, event.isActive)}
+                    className={`gap-1.5 text-[11px] h-7 px-2.5 rounded-full ${
+                      event.isActive
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                        : "text-neutral-400"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        event.isActive ? "bg-emerald-400" : "bg-neutral-500"
                       }`}
+                    />
+                    {event.isActive ? "Active" : "Disabled"}
+                  </Button>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(event)}
+                      className="h-8 w-8 text-neutral-400 hover:text-white"
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          event.isActive ? "bg-emerald-400" : "bg-neutral-500"
-                        }`}
-                      />
-                      {event.isActive ? "Active" : "Disabled"}
-                    </button>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(event)}
-                        className="rounded-md border border-neutral-800 p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loadingId === event.id}
-                        onClick={() => handleDelete(event.id, event.title)}
-                        className="rounded-md border border-neutral-800 p-1.5 text-neutral-400 hover:border-red-900/50 hover:bg-red-950/30 hover:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={loadingId === event.id}
+                      onClick={() => handleDelete(event.id, event.title)}
+                      className="h-8 w-8 text-neutral-400 hover:bg-red-950/40 hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

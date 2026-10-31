@@ -6,6 +6,8 @@ import type { GameEvent } from "../types/event.types";
 import { getEventsAction } from "../services/events-actions";
 import { EventTable } from "./event-table";
 import { EventDialog } from "./event-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface EventsViewProps {
   initialEvents: GameEvent[];
@@ -65,50 +67,61 @@ export function EventsView({
         </div>
       )}
 
-      {/* Header and Stats */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800/80 pb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-neutral-100">Game Events</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">Game Events</h1>
           <p className="text-xs text-neutral-400 mt-1">
             Broadcast limited-time point multipliers, territory raids, and seasonal events to the mobile client.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
+            className="gap-1.5"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
-          </button>
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-medium text-white hover:bg-red-500"
-          >
+          </Button>
+          <Button size="sm" onClick={handleCreate} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />
             New Event
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-          <div className="text-xs text-neutral-400 font-medium">Total Events</div>
-          <div className="text-2xl font-bold mt-1 text-neutral-100">{events.length}</div>
-        </div>
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-          <div className="text-xs text-emerald-400 font-medium">Active Events</div>
-          <div className="text-2xl font-bold mt-1 text-emerald-400">{activeCount}</div>
-        </div>
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-          <div className="text-xs text-neutral-500 font-medium">Inactive / Draft</div>
-          <div className="text-2xl font-bold mt-1 text-neutral-400">{inactiveCount}</div>
-        </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-neutral-400">Total Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-neutral-100">{events.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-emerald-400">Active Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-400">{activeCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-neutral-500">Inactive / Draft</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-neutral-400">{inactiveCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}

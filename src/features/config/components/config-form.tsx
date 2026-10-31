@@ -12,6 +12,17 @@ import {
 } from "lucide-react";
 import type { GlobalAppConfig } from "../types/config.types";
 import { updateAppConfigAction } from "../services/config-actions";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface ConfigFormProps {
   initialConfig: GlobalAppConfig;
@@ -78,191 +89,168 @@ export function ConfigForm({ initialConfig, isConfigured }: ConfigFormProps) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800/80 pb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-neutral-100">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">
             Remote App Configuration
           </h1>
           <p className="text-xs text-neutral-400 mt-1">
             Control maintenance kill-switches, minimum required client versions, and broadcast messages.
           </p>
         </div>
+
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="gap-2"
+        >
+          <Save className="h-4 w-4" />
+          {isSaving ? "Saving..." : "Save Configuration"}
+        </Button>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Card 1: Maintenance Mode & Kill Switch */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800/80 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-300">
-                <Wrench className="h-4 w-4" />
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-300">
+                  <Wrench className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">Maintenance Kill-Switch</CardTitle>
+                  <CardDescription>
+                    Instantly block player sessions when emergency database migrations occur.
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-100">Maintenance Kill-Switch</h3>
-                <p className="text-xs text-neutral-400">
-                  Instantly block player sessions when emergency database migrations occur.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setConfig({ ...config, maintenanceMode: !config.maintenanceMode })
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                config.maintenanceMode ? "bg-red-600" : "bg-neutral-800"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  config.maintenanceMode ? "translate-x-5" : "translate-x-0"
-                }`}
+              <Switch
+                checked={config.maintenanceMode}
+                onCheckedChange={(checked) =>
+                  setConfig({ ...config, maintenanceMode: checked })
+                }
               />
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-neutral-300">
-              Maintenance Screen Message
-            </label>
-            <textarea
-              rows={2}
-              value={config.maintenanceMessage}
-              onChange={(e) => setConfig({ ...config, maintenanceMessage: e.target.value })}
-              className="mt-1.5 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-red-500 focus:outline-hidden"
-            />
-          </div>
-        </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-1.5">
+              <Label htmlFor="maintenanceMessage">Maintenance Screen Message</Label>
+              <textarea
+                id="maintenanceMessage"
+                rows={2}
+                value={config.maintenanceMessage}
+                onChange={(e) =>
+                  setConfig({ ...config, maintenanceMessage: e.target.value })
+                }
+                className="flex w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-100 placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Card 2: Version Enforcement */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 space-y-4">
-          <div className="flex items-center gap-3 border-b border-neutral-800/80 pb-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-300">
-              <ShieldAlert className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-100">
-                Client Version Enforcement
-              </h3>
-              <p className="text-xs text-neutral-400">
-                Require players on older builds to update their APK before accessing online features.
-              </p>
-            </div>
-          </div>
-
-          <div className="max-w-xs">
-            <label className="block text-xs font-medium text-neutral-300">
-              Minimum Required App Version
-            </label>
-            <input
-              type="text"
-              required
-              value={config.minAppVersion}
-              onChange={(e) => setConfig({ ...config, minAppVersion: e.target.value })}
-              placeholder="1.0.0"
-              className="mt-1.5 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs font-mono text-neutral-100 focus:border-red-500 focus:outline-hidden"
-            />
-          </div>
-        </div>
-
-        {/* Card 3: Broadcast Announcement Banner */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800/80 pb-4">
+        <Card>
+          <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-300">
-                <Megaphone className="h-4 w-4" />
+                <ShieldAlert className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-neutral-100">
-                  Live Broadcast Banner
-                </h3>
-                <p className="text-xs text-neutral-400">
-                  Display a top notification banner on all connected mobile players.
-                </p>
+                <CardTitle className="text-sm font-semibold">
+                  Client Version Enforcement
+                </CardTitle>
+                <CardDescription>
+                  Require players on older builds to update their APK before accessing online features.
+                </CardDescription>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setConfig({ ...config, isBroadcastActive: !config.isBroadcastActive })
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                config.isBroadcastActive ? "bg-emerald-500" : "bg-neutral-800"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  config.isBroadcastActive ? "translate-x-5" : "translate-x-0"
-                }`}
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="max-w-xs space-y-1.5">
+              <Label htmlFor="minAppVersion">Minimum Required App Version</Label>
+              <Input
+                id="minAppVersion"
+                type="text"
+                required
+                value={config.minAppVersion}
+                onChange={(e) => setConfig({ ...config, minAppVersion: e.target.value })}
+                placeholder="1.0.0"
+                className="font-mono text-xs"
               />
-            </button>
-          </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div>
-            <label className="block text-xs font-medium text-neutral-300">
-              Banner Message Text
-            </label>
-            <input
-              type="text"
-              value={config.broadcastBanner}
-              onChange={(e) => setConfig({ ...config, broadcastBanner: e.target.value })}
-              placeholder="e.g. Server maintenance scheduled for tonight at 23:00 UTC."
-              className="mt-1.5 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-100 placeholder-neutral-500 focus:border-red-500 focus:outline-hidden"
-            />
-          </div>
-        </div>
+        {/* Card 3: Broadcast Announcement Banner */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-neutral-300">
+                  <Megaphone className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">
+                    Live Broadcast Banner
+                  </CardTitle>
+                  <CardDescription>
+                    Display a top notification banner on all connected mobile players.
+                  </CardDescription>
+                </div>
+              </div>
+              <Switch
+                checked={config.isBroadcastActive}
+                onCheckedChange={(checked) =>
+                  setConfig({ ...config, isBroadcastActive: checked })
+                }
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-1.5">
+              <Label htmlFor="broadcastBanner">Banner Message Text</Label>
+              <Input
+                id="broadcastBanner"
+                type="text"
+                value={config.broadcastBanner}
+                onChange={(e) =>
+                  setConfig({ ...config, broadcastBanner: e.target.value })
+                }
+                placeholder="e.g. Server maintenance scheduled for tonight at 23:00 UTC."
+                className="text-xs"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Card 4: Global Double Paw Points */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-red-400">
-                <Sparkles className="h-4 w-4" />
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/50 text-red-400">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">
+                    Global Double Paw Points
+                  </CardTitle>
+                  <CardDescription>
+                    Instantly activate double points multiplier across all sighting boops and territory captures.
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-100">
-                  Global Double Paw Points
-                </h3>
-                <p className="text-xs text-neutral-400">
-                  Instantly activate double points multiplier across all sighting boops and territory captures.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setConfig({
-                  ...config,
-                  doublePointsGlobal: !config.doublePointsGlobal,
-                })
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                config.doublePointsGlobal ? "bg-red-600" : "bg-neutral-800"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  config.doublePointsGlobal ? "translate-x-5" : "translate-x-0"
-                }`}
+              <Switch
+                checked={config.doublePointsGlobal}
+                onCheckedChange={(checked) =>
+                  setConfig({ ...config, doublePointsGlobal: checked })
+                }
               />
-            </button>
-          </div>
-        </div>
-
-        {/* Submit */}
-        <div className="flex items-center justify-end pt-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50"
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? "Saving Configuration..." : "Save Configuration"}
-          </button>
-        </div>
+            </div>
+          </CardHeader>
+        </Card>
       </form>
     </div>
   );

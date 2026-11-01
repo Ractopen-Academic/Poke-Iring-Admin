@@ -58,7 +58,8 @@ export function EventTable({ events, onEdit, onRefresh }: EventTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Event</TableHead>
-            <TableHead>Type & Multiplier</TableHead>
+            <TableHead>Type & Rewards</TableHead>
+            <TableHead>Placements</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -66,26 +67,50 @@ export function EventTable({ events, onEdit, onRefresh }: EventTableProps) {
         </TableHeader>
         <TableBody>
           {events.map((event) => {
-            const starts = formatDateTime(event.startsAt);
-            const ends = formatDateTime(event.endsAt);
+            const starts = formatDateTime(event.startDate);
+            const ends = formatDateTime(event.endDate);
 
             return (
               <TableRow key={event.id}>
                 <TableCell>
                   <div className="font-semibold text-neutral-100">{event.title}</div>
+                  <div className="text-[11px] text-neutral-500">
+                    {event.subtitle}
+                    {event.partnerName ? ` · ${event.partnerName}` : ""}
+                  </div>
                   <div className="text-[11px] text-neutral-400 line-clamp-1 mt-0.5">
                     {event.description}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="destructive" className="gap-1 font-mono">
                       <Sparkles className="h-3 w-3" />
                       {event.multiplier}x
                     </Badge>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {event.currencyCode}
+                    </Badge>
                     <span className="capitalize text-neutral-400 text-[11px]">
                       {event.eventType.replace("_", " ")}
                     </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1 text-[10px] text-neutral-400">
+                    <Badge variant="outline" className="text-[10px] font-mono">
+                      P{event.priority}
+                    </Badge>
+                    {event.isFeaturedInCarousel && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Carousel
+                      </Badge>
+                    )}
+                    {event.showPopupOnLaunch && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Popup
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-neutral-400 whitespace-nowrap">

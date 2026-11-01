@@ -1,15 +1,34 @@
-export type EventType = "double_points" | "raid" | "seasonal" | "community" | "general";
+export type EventType =
+  | "festival"
+  | "partnership"
+  | "charity"
+  | "spotlight"
+  | "double_points"
+  | "raid"
+  | "seasonal"
+  | "community"
+  | "general";
 
 export interface GameEvent {
   id: string;
   title: string;
+  subtitle: string;
   description: string;
   multiplier: number;
   eventType: EventType;
-  startsAt: string;
-  endsAt: string;
+  startDate: string;
+  endDate: string;
   isActive: boolean;
-  bannerUrl?: string;
+  isFeaturedInCarousel: boolean;
+  showPopupOnLaunch: boolean;
+  priority: number;
+  currencyName: string;
+  currencyCode: string;
+  bannerColorValue: number;
+  accentColorValue: number;
+  bannerImageUrl?: string;
+  partnerName?: string;
+  externalLink?: string;
   createdAt: string;
   updatedAt: string;
 }

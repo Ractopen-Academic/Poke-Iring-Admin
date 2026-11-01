@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { EventType, GameEvent, GameEventInput } from "../types/event.types";
 import { upsertEventAction } from "../services/events-actions";
+import { EventImageUploader } from "./event-image-uploader";
 import {
   Dialog,
   DialogContent,
@@ -88,6 +89,9 @@ export function EventDialog({
   const [bannerImageUrl, setBannerImageUrl] = useState(
     initialEvent?.bannerImageUrl || ""
   );
+  const [logoImageUrl, setLogoImageUrl] = useState(
+    initialEvent?.logoImageUrl || ""
+  );
   const [partnerName, setPartnerName] = useState(
     initialEvent?.partnerName || ""
   );
@@ -147,6 +151,7 @@ export function EventDialog({
       bannerColorValue: hexToArgbInt(bannerHex, 0xff4c1d95),
       accentColorValue: hexToArgbInt(accentHex, 0xfff59e0b),
       bannerImageUrl: bannerImageUrl.trim(),
+      logoImageUrl: logoImageUrl.trim(),
       partnerName: partnerName.trim() || undefined,
       externalLink: externalLink.trim() || undefined,
     };
@@ -376,14 +381,23 @@ export function EventDialog({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="bannerImageUrl">Banner Image URL (Optional)</Label>
-            <Input
+          <div className="space-y-3">
+            <EventImageUploader
+              id="logoImageUrl"
+              kind="logo"
+              label="Event / Partner Logo (Optional)"
+              hint="Square emblem displayed on mobile event badges (PNG, JPG, WebP up to 2 MB)."
+              value={logoImageUrl}
+              onChange={setLogoImageUrl}
+            />
+
+            <EventImageUploader
               id="bannerImageUrl"
-              type="url"
+              kind="banner"
+              label="Hero Banner Artwork (Optional)"
+              hint="Wide cover backdrop for carousel cards and launch modals (PNG, JPG, WebP up to 5 MB)."
               value={bannerImageUrl}
-              onChange={(e) => setBannerImageUrl(e.target.value)}
-              placeholder="https://..."
+              onChange={setBannerImageUrl}
             />
           </div>
 

@@ -73,13 +73,27 @@ export function EventTable({ events, onEdit, onRefresh }: EventTableProps) {
             return (
               <TableRow key={event.id}>
                 <TableCell>
-                  <div className="font-semibold text-neutral-100">{event.title}</div>
-                  <div className="text-[11px] text-neutral-500">
-                    {event.subtitle}
-                    {event.partnerName ? ` · ${event.partnerName}` : ""}
-                  </div>
-                  <div className="text-[11px] text-neutral-400 line-clamp-1 mt-0.5">
-                    {event.description}
+                  <div className="flex items-start gap-3">
+                    {(event.logoImageUrl || event.bannerImageUrl) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={event.logoImageUrl || event.bannerImageUrl}
+                        alt=""
+                        className="mt-0.5 h-9 w-9 shrink-0 rounded-lg border border-neutral-800 bg-neutral-900 object-cover"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-neutral-100 truncate">
+                        {event.title}
+                      </div>
+                      <div className="text-[11px] text-neutral-500 truncate">
+                        {event.subtitle}
+                        {event.partnerName ? ` · ${event.partnerName}` : ""}
+                      </div>
+                      <div className="text-[11px] text-neutral-400 line-clamp-1 mt-0.5">
+                        {event.description}
+                      </div>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>

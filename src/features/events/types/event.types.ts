@@ -27,6 +27,7 @@ export interface GameEvent {
   bannerColorValue: number;
   accentColorValue: number;
   bannerImageUrl?: string;
+  logoImageUrl?: string;
   partnerName?: string;
   externalLink?: string;
   createdAt: string;

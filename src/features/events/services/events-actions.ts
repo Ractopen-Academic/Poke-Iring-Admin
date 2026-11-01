@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { guardRequest } from "@/lib/security/request-guard";
+import {
+  validateEventId,
+  validateEventInput,
+} from "@/lib/security/validators";
 import type { EventType, GameEvent, GameEventInput } from "../types/event.types";
 
 function toIsoString(val: unknown, fallback: string): string {
@@ -78,6 +83,15 @@ export async function getEventsAction(): Promise<{
   isConfigured: boolean;
   error?: string;
 }> {
+  const guard = await guardRequest("read");
+  if (!guard.ok) {
+    return {
+      data: DEMO_EVENTS,
+      isConfigured: isFirebaseAdminConfigured(),
+      error: guard.error,
+    };
+  }
+
   if (!isFirebaseAdminConfigured() || !adminDb) {
     return { data: DEMO_EVENTS, isConfigured: false };
   }
@@ -135,6 +149,10 @@ export async function getEventsAction(): Promise<{
           typeof (d.bannerImageUrl ?? d.bannerUrl) === "string"
             ? (d.bannerImageUrl ?? d.bannerUrl)
             : "",
+        logoImageUrl:
+          typeof (d.logoImageUrl ?? d.logoUrl) === "string"
+            ? (d.logoImageUrl ?? d.logoUrl)
+            : "",
         partnerName:
           typeof d.partnerName === "string" ? d.partnerName : undefined,
         externalLink:
@@ -165,6 +183,16 @@ export async function getEventsAction(): Promise<{
 export async function upsertEventAction(
   input: GameEventInput
 ): Promise<{ success: boolean; id?: string; error?: string }> {
+  const guard = await guardRequest("mutation");
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
+
+  const validation = validateEventInput(input);
+  if (!validation.ok) {
+    return { success: false, error: validation.error };
+  }
+
   if (!isFirebaseAdminConfigured() || !adminDb) {
     return {
       success: false,
@@ -174,45 +202,41 @@ export async function upsertEventAction(
   }
 
   try {
+    const clean = validation.data;
     const now = new Date().toISOString();
-    const docId = input.id || `event_${Date.now()}`;
+    const docId = clean.id || `event_${Date.now()}`;
     const docRef = adminDb.collection("events").doc(docId);
 
-    const startDate = toIsoString(input.startDate, now);
-    const endDate = toIsoString(input.endDate, now);
-    const bannerImageUrl = (input.bannerImageUrl || "").trim();
+    const bannerImageUrl = clean.bannerImageUrl || "";
+    const logoImageUrl = clean.logoImageUrl || "";
 
     const dataToSave = {
       id: docId,
-      title: input.title.trim(),
-      subtitle: input.subtitle.trim() || "Limited-Time Event",
-      description: input.description.trim(),
-      multiplier: clampMultiplier(input.multiplier),
-      eventType: input.eventType,
-      startDate,
-      endDate,
-      startsAt: startDate,
-      endsAt: endDate,
-      isActive: Boolean(input.isActive),
-      isFeaturedInCarousel: Boolean(input.isFeaturedInCarousel),
-      showPopupOnLaunch: Boolean(input.showPopupOnLaunch),
-      priority: Number.isFinite(Number(input.priority))
-        ? Number(input.priority)
-        : 0,
-      currencyName: input.currencyName.trim() || "Moonlit Tokens",
-      currencyCode: input.currencyCode.trim().toUpperCase() || "MLT",
-      bannerColorValue: Number.isFinite(Number(input.bannerColorValue))
-        ? Number(input.bannerColorValue)
-        : 0xff4c1d95,
-      accentColorValue: Number.isFinite(Number(input.accentColorValue))
-        ? Number(input.accentColorValue)
-        : 0xfff59e0b,
+      title: clean.title,
+      subtitle: clean.subtitle,
+      description: clean.description,
+      multiplier: clean.multiplier,
+      eventType: clean.eventType,
+      startDate: clean.startDate,
+      endDate: clean.endDate,
+      startsAt: clean.startDate,
+      endsAt: clean.endDate,
+      isActive: clean.isActive,
+      isFeaturedInCarousel: clean.isFeaturedInCarousel,
+      showPopupOnLaunch: clean.showPopupOnLaunch,
+      priority: clean.priority,
+      currencyName: clean.currencyName,
+      currencyCode: clean.currencyCode,
+      bannerColorValue: clean.bannerColorValue,
+      accentColorValue: clean.accentColorValue,
       bannerImageUrl,
       bannerUrl: bannerImageUrl,
-      partnerName: input.partnerName?.trim() || null,
-      externalLink: input.externalLink?.trim() || null,
+      logoImageUrl,
+      logoUrl: logoImageUrl,
+      partnerName: clean.partnerName || null,
+      externalLink: clean.externalLink || null,
       updatedAt: now,
-      ...(input.id ? {} : { createdAt: now }),
+      ...(clean.id ? {} : { createdAt: now }),
     };
 
     await docRef.set(dataToSave, { merge: true });
@@ -232,6 +256,19 @@ export async function toggleEventStatusAction(
   id: string,
   isActive: boolean
 ): Promise<{ success: boolean; error?: string }> {
+  const guard = await guardRequest("mutation");
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
+
+  const idCheck = validateEventId(id);
+  if (!idCheck.ok) {
+    return { success: false, error: idCheck.error };
+  }
+  if (typeof isActive !== "boolean") {
+    return { success: false, error: "Active state must be a boolean." };
+  }
+
   if (!isFirebaseAdminConfigured() || !adminDb) {
     return {
       success: false,
@@ -240,7 +277,7 @@ export async function toggleEventStatusAction(
   }
 
   try {
-    await adminDb.collection("events").doc(id).update({
+    await adminDb.collection("events").doc(idCheck.data).update({
       isActive,
       updatedAt: new Date().toISOString(),
     });
@@ -259,6 +296,16 @@ export async function toggleEventStatusAction(
 export async function deleteEventAction(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
+  const guard = await guardRequest("mutation");
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
+
+  const idCheck = validateEventId(id);
+  if (!idCheck.ok) {
+    return { success: false, error: idCheck.error };
+  }
+
   if (!isFirebaseAdminConfigured() || !adminDb) {
     return {
       success: false,
@@ -267,7 +314,7 @@ export async function deleteEventAction(
   }
 
   try {
-    await adminDb.collection("events").doc(id).delete();
+    await adminDb.collection("events").doc(idCheck.data).delete();
     revalidatePath("/events");
     revalidatePath("/");
     return { success: true };

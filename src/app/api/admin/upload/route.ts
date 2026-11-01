@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { getAdminStorageBucket, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import {
+  getStorageUploadContext,
+  isFirebaseAdminConfigured,
+} from "@/lib/firebase/admin";
 import { guardRequest } from "@/lib/security/request-guard";
 import {
   validateEventImageBinary,
@@ -63,34 +66,66 @@ export async function POST(request: Request) {
     );
   }
 
-  const bucket = getAdminStorageBucket();
-  if (!bucket) {
-    return NextResponse.json(
-      { ok: false, error: "Firebase Storage bucket is unavailable." },
-      { status: 503 }
-    );
-  }
-
   try {
+    const storageAuth = await getStorageUploadContext();
+    if (!storageAuth) {
+      return NextResponse.json(
+        { ok: false, error: "Firebase Storage credentials are unavailable." },
+        { status: 503 }
+      );
+    }
+
+    const { bucketName, accessToken } = storageAuth;
     const { mimeType, extension } = validation.data;
     const uniqueSuffix = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     const objectPath = `events/${kind}s/${Date.now()}_${uniqueSuffix}.${extension}`;
     const downloadToken = crypto.randomUUID();
+    const boundary = `pokeiring_${crypto.randomUUID().replace(/-/g, "")}`;
 
-    await bucket.file(objectPath).save(Buffer.from(bytes), {
-      resumable: false,
+    const metadataJson = JSON.stringify({
+      name: objectPath,
       contentType: mimeType,
+      cacheControl: "public, max-age=31536000, immutable",
       metadata: {
-        cacheControl: "public, max-age=31536000, immutable",
-        metadata: {
-          firebaseStorageDownloadTokens: downloadToken,
-          uploadedVia: "poke-iring-admin",
-          mediaKind: kind,
-        },
+        firebaseStorageDownloadTokens: downloadToken,
+        uploadedVia: "poke-iring-admin",
+        mediaKind: kind,
       },
     });
 
-    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(objectPath)}?alt=media&token=${downloadToken}`;
+    const preamble = Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadataJson}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`,
+      "utf8"
+    );
+    const epilogue = Buffer.from(`\r\n--${boundary}--\r\n`, "utf8");
+    const multipartBody = Buffer.concat([
+      preamble,
+      Buffer.from(bytes),
+      epilogue,
+    ]);
+
+    const uploadEndpoint = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucketName)}/o?uploadType=multipart`;
+    const gcsResponse = await fetch(uploadEndpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+    });
+
+    if (!gcsResponse.ok) {
+      const errText = await gcsResponse.text().catch(() => "");
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Storage upload rejected (${gcsResponse.status})${errText ? `: ${errText.slice(0, 180)}` : "."}`,
+        },
+        { status: 502 }
+      );
+    }
+
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(objectPath)}?alt=media&token=${downloadToken}`;
 
     return NextResponse.json({
       ok: true,

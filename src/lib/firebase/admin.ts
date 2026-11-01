@@ -1,7 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { getStorage, type Storage } from "firebase-admin/storage";
 
 function formatPrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
@@ -74,20 +73,32 @@ export const adminApp = appInstance;
 export const adminDb = appInstance
   ? getFirestore(appInstance)
   : (null as unknown as Firestore);
-export const adminStorage: Storage | null = appInstance
-  ? getStorage(appInstance)
-  : null;
 
-export function getAdminStorageBucket() {
-  if (!adminStorage) return null;
+export async function getStorageUploadContext(): Promise<{
+  bucketName: string;
+  accessToken: string;
+} | null> {
+  if (!appInstance || !appInstance.options.credential) {
+    return null;
+  }
+
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const bucketName =
     process.env.FIREBASE_STORAGE_BUCKET ||
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    (projectId ? `${projectId}.firebasestorage.app` : undefined);
-  try {
-    return bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
-  } catch {
+    (projectId ? `${projectId}.firebasestorage.app` : "");
+
+  if (!bucketName) {
     return null;
   }
+
+  const tokenResult = await appInstance.options.credential.getAccessToken();
+  if (!tokenResult?.access_token) {
+    return null;
+  }
+
+  return {
+    bucketName,
+    accessToken: tokenResult.access_token,
+  };
 }

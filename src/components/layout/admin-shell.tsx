@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Calendar,
+  Database,
   LayoutDashboard,
   MapPin,
   Settings,
@@ -25,6 +26,11 @@ const NAV_ITEMS = [
     name: "Game Events",
     href: "/events",
     icon: Calendar,
+  },
+  {
+    name: "Database & Dry Run",
+    href: "/database",
+    icon: Database,
   },
   {
     name: "Remote Config",
@@ -48,12 +54,12 @@ export function AdminShell({ children }: AdminShellProps) {
         <div>
           {/* Brand header */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-800/80">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-semibold text-white tracking-wider">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FF8C1A] font-bold text-white tracking-wider shadow-xs">
               PI
             </div>
             <div>
-              <div className="text-sm font-semibold tracking-tight">Poke-Iring</div>
-              <div className="text-xs text-neutral-400">Admin Console</div>
+              <div className="text-sm font-semibold tracking-tight">Poke: Iring</div>
+              <div className="text-xs text-neutral-400">Calico Operations</div>
             </div>
           </div>
 
@@ -69,7 +75,7 @@ export function AdminShell({ children }: AdminShellProps) {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-neutral-800 text-white font-semibold"
+                      ? "bg-[#FF8C1A]/15 text-[#FF8C1A] border border-[#FF8C1A]/30 font-semibold"
                       : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
                   )}
                 >
@@ -88,7 +94,7 @@ export function AdminShell({ children }: AdminShellProps) {
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Portal Live
             </span>
-            <span className="font-mono text-neutral-500">v1.0.0</span>
+            <span className="font-mono text-neutral-500">v1.1.0</span>
           </div>
         </div>
       </aside>
@@ -100,7 +106,9 @@ export function AdminShell({ children }: AdminShellProps) {
           <div className="flex items-center gap-2 text-xs text-neutral-400">
             <span>Client Platform</span>
             <span>&rsaquo;</span>
-            <span className="text-neutral-200 font-medium">Flutter Mobile</span>
+            <span className="text-neutral-200 font-medium">
+              Flutter Mobile &amp; Web (Calico Theme)
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-xs text-neutral-300">

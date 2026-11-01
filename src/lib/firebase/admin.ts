@@ -1,6 +1,7 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage, type Storage } from "firebase-admin/storage";
 
 function formatPrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
@@ -33,6 +34,10 @@ function initializeFirebaseAdmin(): App | null {
     const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
     const privateKey = formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+    const storageBucket =
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      (projectId ? `${projectId}.firebasestorage.app` : undefined);
 
     if (projectId && clientEmail && privateKey) {
       return initializeApp({
@@ -41,12 +46,13 @@ function initializeFirebaseAdmin(): App | null {
           clientEmail,
           privateKey,
         }),
+        ...(storageBucket ? { storageBucket } : {}),
       });
     }
 
     // If in cloud environment with default credentials
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE) {
-      return initializeApp();
+      return initializeApp(storageBucket ? { storageBucket } : undefined);
     }
 
     return null;
@@ -65,4 +71,23 @@ try {
 }
 
 export const adminApp = appInstance;
-export const adminDb = appInstance ? getFirestore(appInstance) : (null as unknown as Firestore);
+export const adminDb = appInstance
+  ? getFirestore(appInstance)
+  : (null as unknown as Firestore);
+export const adminStorage: Storage | null = appInstance
+  ? getStorage(appInstance)
+  : null;
+
+export function getAdminStorageBucket() {
+  if (!adminStorage) return null;
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+  const bucketName =
+    process.env.FIREBASE_STORAGE_BUCKET ||
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+    (projectId ? `${projectId}.firebasestorage.app` : undefined);
+  try {
+    return bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
+  } catch {
+    return null;
+  }
+}

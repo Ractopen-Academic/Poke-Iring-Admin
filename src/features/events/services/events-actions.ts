@@ -47,8 +47,8 @@ const DEMO_EVENTS: GameEvent[] = [
     priority: 10,
     currencyName: "Moonlit Tokens",
     currencyCode: "MLT",
-    bannerColorValue: 0xff4c1d95,
-    accentColorValue: 0xfff59e0b,
+    bannerColorValue: 0xff231a16,
+    accentColorValue: 0xffff8c1a,
     bannerImageUrl: "",
     createdAt: "2026-10-30T00:00:00.000Z",
     updatedAt: "2026-10-30T00:00:00.000Z",
@@ -69,8 +69,8 @@ const DEMO_EVENTS: GameEvent[] = [
     priority: 8,
     currencyName: "Rescue Stars",
     currencyCode: "STR",
-    bannerColorValue: 0xff0d9488,
-    accentColorValue: 0xff14b8a6,
+    bannerColorValue: 0xff5c2d16,
+    accentColorValue: 0xffffb04f,
     bannerImageUrl: "",
     partnerName: "Island Rescue Org (IRO)",
     createdAt: "2026-10-30T00:00:00.000Z",
@@ -141,10 +141,10 @@ export async function getEventsAction(): Promise<{
             : "MLT",
         bannerColorValue: Number.isFinite(Number(d.bannerColorValue))
           ? Number(d.bannerColorValue)
-          : 0xff4c1d95,
+          : 0xff231a16,
         accentColorValue: Number.isFinite(Number(d.accentColorValue))
           ? Number(d.accentColorValue)
-          : 0xfff59e0b,
+          : 0xffff8c1a,
         bannerImageUrl:
           typeof (d.bannerImageUrl ?? d.bannerUrl) === "string"
             ? (d.bannerImageUrl ?? d.bannerUrl)
@@ -170,12 +170,12 @@ export async function getEventsAction(): Promise<{
     return { data: events, isConfigured: true };
   } catch (err) {
     return {
-      data: DEMO_EVENTS,
+      data: [],
       isConfigured: true,
       error:
-          err instanceof Error
-            ? err.message
-            : "Failed to load events from Firestore",
+        err instanceof Error
+          ? err.message
+          : "Failed to load events from Firestore",
     };
   }
 }

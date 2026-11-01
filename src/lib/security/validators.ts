@@ -190,8 +190,8 @@ export function validateEventInput(raw: unknown): ValidationResult<GameEventInpu
     };
   }
 
-  const bannerColorValue = Number(raw.bannerColorValue ?? 0xff4c1d95);
-  const accentColorValue = Number(raw.accentColorValue ?? 0xfff59e0b);
+  const bannerColorValue = Number(raw.bannerColorValue ?? 0xff231a16);
+  const accentColorValue = Number(raw.accentColorValue ?? 0xffff8c1a);
   if (
     !Number.isFinite(bannerColorValue) ||
     bannerColorValue < 0 ||
@@ -410,4 +410,100 @@ export function validateEventImageBinary(
   }
 
   return { ok: true, data: detected };
+}
+
+export type DatabasePurgeScope =
+  | "mock_only"
+  | "player_activity"
+  | "all_events"
+  | "full_dry_run_reset";
+
+const ALLOWED_PURGE_SCOPES = new Set<DatabasePurgeScope>([
+  "mock_only",
+  "player_activity",
+  "all_events",
+  "full_dry_run_reset",
+]);
+
+export interface ValidatedPurgeRequest {
+  scope: DatabasePurgeScope;
+  confirmPhrase: string;
+}
+
+export function validateDatabasePurgeRequest(
+  raw: unknown
+): ValidationResult<ValidatedPurgeRequest> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "Malformed purge request payload." };
+  }
+
+  if (
+    typeof raw.scope !== "string" ||
+    !ALLOWED_PURGE_SCOPES.has(raw.scope as DatabasePurgeScope)
+  ) {
+    return { ok: false, error: "Unsupported database purge scope." };
+  }
+
+  const confirmPhrase =
+    typeof raw.confirmPhrase === "string" ? raw.confirmPhrase.trim() : "";
+  if (confirmPhrase !== "DRY-RUN" && confirmPhrase !== "CONFIRM") {
+    return {
+      ok: false,
+      error: 'Type "CONFIRM" in the confirmation box to authorize this database operation.',
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      scope: raw.scope as DatabasePurgeScope,
+      confirmPhrase,
+    },
+  };
+}
+
+export interface ValidatedPopulateRequest {
+  seedConfigAndSeason: boolean;
+  seedTerritories: boolean;
+  seedQuests: boolean;
+  seedDexAndAchievements: boolean;
+  seedCalicoStarterEvents: boolean;
+}
+
+export function validateDatabasePopulateRequest(
+  raw: unknown
+): ValidationResult<ValidatedPopulateRequest> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "Malformed populate request payload." };
+  }
+
+  const seedConfigAndSeason = raw.seedConfigAndSeason !== false;
+  const seedTerritories = raw.seedTerritories !== false;
+  const seedQuests = raw.seedQuests !== false;
+  const seedDexAndAchievements = raw.seedDexAndAchievements !== false;
+  const seedCalicoStarterEvents = Boolean(raw.seedCalicoStarterEvents);
+
+  if (
+    !seedConfigAndSeason &&
+    !seedTerritories &&
+    !seedQuests &&
+    !seedDexAndAchievements &&
+    !seedCalicoStarterEvents
+  ) {
+    return {
+      ok: false,
+      error: "Select at least one baseline dataset to populate.",
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      seedConfigAndSeason,
+      seedTerritories,
+      seedQuests,
+      seedDexAndAchievements,
+      seedCalicoStarterEvents,
+    },
+  };
 }

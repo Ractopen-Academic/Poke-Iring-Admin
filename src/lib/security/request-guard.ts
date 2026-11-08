@@ -1,7 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 
-export type RequestBucket = "read" | "mutation" | "upload";
+export type RequestBucket = "read" | "mutation" | "upload" | "vision";
 
 export interface GuardResult {
   ok: boolean;
@@ -18,6 +18,7 @@ const BUCKET_LIMITS: Record<RequestBucket, { maxRequests: number; windowMs: numb
   read: { maxRequests: 120, windowMs: 60_000 },
   mutation: { maxRequests: 25, windowMs: 60_000 },
   upload: { maxRequests: 10, windowMs: 60_000 },
+  vision: { maxRequests: 20, windowMs: 60_000 },
 };
 
 const MAX_TRACKED_KEYS = 1000;

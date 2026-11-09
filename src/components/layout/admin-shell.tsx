@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   Calendar,
   Database,
   LayoutDashboard,
+  LogOut,
   MapPin,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -42,10 +45,31 @@ const NAV_ITEMS = [
     href: "/territories",
     icon: MapPin,
   },
+  {
+    name: "Quests & Moderation",
+    href: "/moderation",
+    icon: ShieldCheck,
+  },
 ];
 
 export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/admin/auth/session", { method: "DELETE" });
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Sign out error:", err);
+      router.push("/login");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
@@ -87,8 +111,8 @@ export function AdminShell({ children }: AdminShellProps) {
           </nav>
         </div>
 
-        {/* System badge footer */}
-        <div className="p-4 border-t border-neutral-800/80">
+        {/* System badge footer & Logout */}
+        <div className="p-4 border-t border-neutral-800/80 space-y-3">
           <div className="flex items-center justify-between text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -96,6 +120,16 @@ export function AdminShell({ children }: AdminShellProps) {
             </span>
             <span className="font-mono text-neutral-500">v1.1.0</span>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="w-full justify-start gap-2 text-xs text-neutral-400 hover:text-red-400 hover:bg-neutral-800/50"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sign Out of Console
+          </Button>
         </div>
       </aside>
 
@@ -115,6 +149,15 @@ export function AdminShell({ children }: AdminShellProps) {
               <Activity className="h-3 w-3 text-emerald-400" />
               Connected to Cloud Firestore
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              className="h-8 gap-1.5 border-neutral-800 text-xs text-neutral-300 hover:text-red-400"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign Out
+            </Button>
           </div>
         </header>
 

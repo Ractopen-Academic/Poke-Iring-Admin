@@ -13,6 +13,7 @@ import {
 import { getEventsAction } from "@/features/events/services/events-actions";
 import { getAppConfigAction } from "@/features/config/services/config-actions";
 import { getDashboardTelemetryAction } from "@/features/database/services/database-actions";
+import { ExportTelemetryButton } from "@/features/database/components/export-telemetry-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <ExportTelemetryButton telemetry={telemetry} />
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link href="/database">
               <Database className="h-3.5 w-3.5 text-[#FF8C1A]" />

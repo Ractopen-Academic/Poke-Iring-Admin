@@ -57,6 +57,33 @@ export interface SeededTerritoryRecord {
   barangays: string[];
 }
 
+export interface ExplorerTerritoryBinding {
+  userId: string;
+  username: string;
+  displayName: string;
+  city: string;
+  barangay: string;
+  isLocked: boolean;
+  lockedUntilIso: string | null;
+  lastChangedIso: string | null;
+}
+
+export interface TerritoryStanding {
+  city: string;
+  region: string;
+  sightingsCount: number;
+  explorersCount: number;
+  barangaysCount: number;
+  isContested: boolean;
+}
+
+export interface TerritoryManagementData {
+  territories: SeededTerritoryRecord[];
+  standings: TerritoryStanding[];
+  bindings: ExplorerTerritoryBinding[];
+  contestedCities: string[];
+}
+
 export interface DatabasePurgeResult {
   scope: DatabasePurgeScope;
   deletedCount: number;

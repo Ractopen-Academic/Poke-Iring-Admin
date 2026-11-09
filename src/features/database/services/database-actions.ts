@@ -28,6 +28,9 @@ import type {
   DatabasePopulateResult,
   DatabasePurgeResult,
   SeededTerritoryRecord,
+  ExplorerTerritoryBinding,
+  TerritoryManagementData,
+  TerritoryStanding,
 } from "../types/database.types";
 
 interface ActionResponse<T> {
@@ -603,6 +606,160 @@ export async function getSeededTerritoriesAction(): Promise<
   } catch (error) {
     console.error("Failed to load territories:", error);
     return { success: false, error: "Failed to read territories collection." };
+  }
+}
+
+export async function getTerritoryManagementDataAction(): Promise<
+  ActionResponse<TerritoryManagementData>
+> {
+  const guard = await guardRequest("read");
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
+
+  if (!isFirebaseAdminConfigured() || !adminDb) {
+    return {
+      success: true,
+      data: {
+        territories: [],
+        standings: [],
+        bindings: [],
+        contestedCities: [],
+      },
+    };
+  }
+
+  try {
+    const [territoriesSnap, sightingsSnap, usersSnap] = await Promise.all([
+      adminDb.collection("territories").get(),
+      adminDb.collection("sightings").get(),
+      adminDb.collection("users").get(),
+    ]);
+
+    const territories: SeededTerritoryRecord[] = territoriesSnap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        city: typeof data.city === "string" ? data.city : doc.id,
+        province: typeof data.province === "string" ? data.province : "",
+        region: typeof data.region === "string" ? data.region : "Philippines",
+        barangays: Array.isArray(data.barangays) ? data.barangays.map(String) : [],
+      };
+    });
+
+    const sightingsByCity = new Map<string, number>();
+    for (const doc of sightingsSnap.docs) {
+      const data = doc.data();
+      if (isMockFirestoreDocument("sightings", doc.id, data)) continue;
+      const city = (typeof data.city === "string" && data.city.trim()) || "Lapu-Lapu City";
+      sightingsByCity.set(city, (sightingsByCity.get(city) || 0) + 1);
+    }
+
+    const now = Date.now();
+    const bindings: ExplorerTerritoryBinding[] = [];
+    const explorersByCity = new Map<string, number>();
+
+    for (const doc of usersSnap.docs) {
+      const data = doc.data();
+      if (isMockFirestoreDocument("users", doc.id, data)) continue;
+      const city = typeof data.city === "string" ? data.city.trim() : "";
+      const barangay = typeof data.barangay === "string" ? data.barangay.trim() : "";
+      if (!city) continue;
+
+      explorersByCity.set(city, (explorersByCity.get(city) || 0) + 1);
+
+      const lockedUntilMs = parseFirestoreDateMs(data.territoryLockedUntil);
+      const isLocked = Boolean(data.isTerritoryLocked) || (lockedUntilMs !== null && lockedUntilMs > now);
+
+      bindings.push({
+        userId: doc.id,
+        username: typeof data.username === "string" ? data.username : "Explorer",
+        displayName: typeof data.displayName === "string" ? data.displayName : "",
+        city,
+        barangay: barangay || "Unassigned",
+        isLocked,
+        lockedUntilIso: lockedUntilMs ? new Date(lockedUntilMs).toISOString() : null,
+        lastChangedIso: parseFirestoreDateMs(data.lastTerritoryChange)
+          ? new Date(parseFirestoreDateMs(data.lastTerritoryChange)!).toISOString()
+          : null,
+      });
+    }
+
+    const standings: TerritoryStanding[] = territories.map((t) => {
+      const sightingsCount = sightingsByCity.get(t.city) || 0;
+      const explorersCount = explorersByCity.get(t.city) || 0;
+      const isContested = sightingsCount >= 2 && explorersCount >= 2;
+      return {
+        city: t.city,
+        region: t.region,
+        sightingsCount,
+        explorersCount,
+        barangaysCount: t.barangays.length,
+        isContested,
+      };
+    });
+
+    standings.sort((a, b) => b.sightingsCount - a.sightingsCount);
+
+    const contestedCities = standings.filter((s) => s.isContested).map((s) => s.city);
+
+    return {
+      success: true,
+      data: {
+        territories,
+        standings,
+        bindings,
+        contestedCities,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to load territory management data:", error);
+    return {
+      success: false,
+      error: "Failed to load territory standings and explorer bindings.",
+    };
+  }
+}
+
+export async function resetExplorerTerritoryLockAction(
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const guard = await guardRequest("mutation");
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
+
+  if (!isFirebaseAdminConfigured() || !adminDb) {
+    return {
+      success: false,
+      error: "Firebase Admin is not configured. Add credentials in .env.local to persist changes.",
+    };
+  }
+
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) {
+    return { success: false, error: "Valid explorer user ID required." };
+  }
+
+  try {
+    await adminDb.collection("users").doc(cleanUserId).set(
+      {
+        isTerritoryLocked: false,
+        territoryLockedUntil: null,
+        lastTerritoryChange: null,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    revalidatePath("/territories");
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to reset territory lock for ${cleanUserId}:`, error);
+    return {
+      success: false,
+      error: "Failed to reset territory lock on explorer profile.",
+    };
   }
 }
 

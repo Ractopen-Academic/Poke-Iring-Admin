@@ -30,54 +30,6 @@ function clampMultiplier(value: unknown): number {
   return Math.min(5.0, Math.max(1.0, Math.round(parsed * 100) / 100));
 }
 
-const DEMO_EVENTS: GameEvent[] = [
-  {
-    id: "event_moonlit_strays_2026",
-    title: "Moonlit Strays Festival",
-    subtitle: "Exclusive Seasonal Gathering",
-    description:
-      "Stroll through dusk and dawn to map neighborhood cats and earn Moonlit Tokens for exclusive avatar borders.",
-    multiplier: 2.0,
-    eventType: "festival",
-    startDate: "2026-10-30T00:00:00.000Z",
-    endDate: "2026-11-12T23:59:59.000Z",
-    isActive: true,
-    isFeaturedInCarousel: true,
-    showPopupOnLaunch: true,
-    priority: 10,
-    currencyName: "Moonlit Tokens",
-    currencyCode: "MLT",
-    bannerColorValue: 0xff231a16,
-    accentColorValue: 0xffff8c1a,
-    bannerImageUrl: "",
-    createdAt: "2026-10-30T00:00:00.000Z",
-    updatedAt: "2026-10-30T00:00:00.000Z",
-  },
-  {
-    id: "event_cebu_shelter_partnership_2026",
-    title: "Cebu Sanctuary Care Drive",
-    subtitle: "Community Partnership Initiative",
-    description:
-      "Partnering with Island Rescue Organization to support neighborhood colony cats across Cebu.",
-    multiplier: 1.5,
-    eventType: "partnership",
-    startDate: "2026-11-01T00:00:00.000Z",
-    endDate: "2026-11-20T23:59:59.000Z",
-    isActive: false,
-    isFeaturedInCarousel: true,
-    showPopupOnLaunch: false,
-    priority: 8,
-    currencyName: "Rescue Stars",
-    currencyCode: "STR",
-    bannerColorValue: 0xff5c2d16,
-    accentColorValue: 0xffffb04f,
-    bannerImageUrl: "",
-    partnerName: "Island Rescue Org (IRO)",
-    createdAt: "2026-10-30T00:00:00.000Z",
-    updatedAt: "2026-10-30T00:00:00.000Z",
-  },
-];
-
 export async function getEventsAction(): Promise<{
   data: GameEvent[];
   isConfigured: boolean;
@@ -86,14 +38,18 @@ export async function getEventsAction(): Promise<{
   const guard = await guardRequest("read");
   if (!guard.ok) {
     return {
-      data: DEMO_EVENTS,
+      data: [],
       isConfigured: isFirebaseAdminConfigured(),
       error: guard.error,
     };
   }
 
   if (!isFirebaseAdminConfigured() || !adminDb) {
-    return { data: DEMO_EVENTS, isConfigured: false };
+    return {
+      data: [],
+      isConfigured: false,
+      error: "Firebase Admin is not configured or database connection is offline.",
+    };
   }
 
   try {

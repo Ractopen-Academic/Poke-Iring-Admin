@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { verifyAdminSession } from "./auth-guard";
 
 export type RequestBucket = "read" | "mutation" | "upload" | "vision";
 
@@ -84,6 +85,16 @@ export async function guardRequest(bucket: RequestBucket): Promise<GuardResult> 
     "local";
 
   if (bucket === "mutation" || bucket === "upload") {
+    const session = await verifyAdminSession();
+    if (!session.ok) {
+      return {
+        ok: false,
+        status: 403,
+        error: session.error || "Forbidden: Admin privileges required.",
+        clientIp,
+      };
+    }
+
     const expectedHost = (
       hdrs.get("x-forwarded-host") ||
       hdrs.get("host") ||

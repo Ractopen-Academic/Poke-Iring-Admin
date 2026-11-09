@@ -1,9 +1,8 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Agent notes - Poke: Iring Admin (Next.js Console)
 
-## This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+## Local Compilation & Heavy Task Policy
+- **Never run heavy builds or heavy compilations locally**: Commands like heavy container builds or full production artifact generation should be handled in CI/cloud.
+- **Stop local testing and compilation if heavy**: Any operation that takes longer than a minute or consumes high CPU/memory must not run locally.
+- **Lightweight checks only**: Fast linting (`pnpm lint` / `eslint`), type-checking (`tsc --noEmit`), and fast checks are allowed locally.
+- **Cloud & GitHub Actions Priority**: Use GitHub Actions / Vercel cloud deployments for heavy end-to-end pipelines.
+- **User Permission Required**: Always ask the user before compiling or running heavy builds.

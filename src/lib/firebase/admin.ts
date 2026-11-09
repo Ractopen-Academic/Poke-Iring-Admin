@@ -1,5 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 function formatPrivateKey(key?: string): string | undefined {
@@ -70,6 +71,9 @@ try {
 }
 
 export const adminApp = appInstance;
+export const adminAuth = appInstance
+  ? getAuth(appInstance)
+  : (null as unknown as Auth);
 export const adminDb = appInstance
   ? getFirestore(appInstance)
   : (null as unknown as Firestore);

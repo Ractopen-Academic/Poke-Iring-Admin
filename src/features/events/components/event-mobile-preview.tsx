@@ -186,6 +186,7 @@ export function EventMobilePreview({
   const [previewMode, setPreviewMode] = useState<"carousel" | "popup">(
     "carousel"
   );
+  const [coatTheme, setCoatTheme] = useState<"white" | "dark">("white");
 
   const safeBannerHex = /^#[0-9a-fA-F]{6}$/.test(bannerHex)
     ? bannerHex
@@ -246,29 +247,56 @@ export function EventMobilePreview({
           </div>
         </div>
 
-        <div className="inline-flex rounded-lg border border-neutral-800 bg-neutral-900 p-0.5 text-[11px]">
-          <button
-            type="button"
-            onClick={() => setPreviewMode("carousel")}
-            className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-              previewMode === "carousel"
-                ? "bg-[#FF8C1A] text-white"
-                : "text-neutral-400 hover:text-neutral-200"
-            }`}
-          >
-            Home Card
-          </button>
-          <button
-            type="button"
-            onClick={() => setPreviewMode("popup")}
-            className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-              previewMode === "popup"
-                ? "bg-[#FF8C1A] text-white"
-                : "text-neutral-400 hover:text-neutral-200"
-            }`}
-          >
-            Launch Modal
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-neutral-800 bg-neutral-900 p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setCoatTheme("white")}
+              className={`rounded-md px-2 py-0.5 font-medium transition-colors ${
+                coatTheme === "white"
+                  ? "bg-neutral-100 text-neutral-950 font-semibold"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              Calico White
+            </button>
+            <button
+              type="button"
+              onClick={() => setCoatTheme("dark")}
+              className={`rounded-md px-2 py-0.5 font-medium transition-colors ${
+                coatTheme === "dark"
+                  ? "bg-[#2A1F1A] text-[#FF8C1A] font-semibold border border-[#FF8C1A]/40"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              Calico Dark
+            </button>
+          </div>
+
+          <div className="inline-flex rounded-lg border border-neutral-800 bg-neutral-900 p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setPreviewMode("carousel")}
+              className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                previewMode === "carousel"
+                  ? "bg-[#FF8C1A] text-white"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              Home Card
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewMode("popup")}
+              className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                previewMode === "popup"
+                  ? "bg-[#FF8C1A] text-white"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              Launch Modal
+            </button>
+          </div>
         </div>
       </div>
 
@@ -295,12 +323,32 @@ export function EventMobilePreview({
 
       {/* Simulated Mobile Viewport */}
       <div className="mt-3 flex justify-center">
-        <div className="relative w-full max-w-[320px] overflow-hidden rounded-[28px] border-[5px] border-[#1B1614] bg-[#FFF9F2] text-[#1E1815] shadow-2xl">
+        <div
+          className={`relative w-full max-w-[320px] overflow-hidden rounded-[28px] border-[5px] shadow-2xl transition-colors duration-200 ${
+            coatTheme === "white"
+              ? "border-[#1B1614] bg-[#FAF7F2] text-[#14171A]"
+              : "border-[#2A1F1A] bg-[#140F0D] text-[#FFF9F2]"
+          }`}
+        >
           {/* Phone Top Bar */}
-          <div className="flex items-center justify-center gap-1.5 pt-2.5 pb-2 bg-[#FFF9F2]">
+          <div
+            className={`flex items-center justify-center gap-1.5 pt-2.5 pb-2 transition-colors duration-200 ${
+              coatTheme === "white"
+                ? "bg-[#FAF7F2] text-[#14171A]"
+                : "bg-[#140F0D] text-[#FFF9F2]"
+            }`}
+          >
             <span className="h-2 w-2 rounded-full bg-[#FF8C1A]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[#1B1614]" />
-            <span className="text-xs font-extrabold tracking-tight text-[#1E1815]">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                coatTheme === "white" ? "bg-[#14171A]" : "bg-neutral-400"
+              }`}
+            />
+            <span
+              className={`text-xs font-extrabold tracking-tight ${
+                coatTheme === "white" ? "text-[#14171A]" : "text-[#FFF9F2]"
+              }`}
+            >
               Poke: Iring
             </span>
           </div>
@@ -459,23 +507,47 @@ export function EventMobilePreview({
             {/* Mini Paw Quests Preview */}
             <div className="space-y-1.5 pt-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-[#1E1815]">
+                <span
+                  className={`text-[11px] font-extrabold ${
+                    coatTheme === "white" ? "text-[#14171A]" : "text-[#FFF9F2]"
+                  }`}
+                >
                   Paw Quests
                 </span>
-                <span className="rounded-full border border-[#F2E3D3] bg-[#FFF2E4] px-2 py-0.5 text-[8.5px] font-semibold text-[#6E5F57]">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[8.5px] font-semibold ${
+                    coatTheme === "white"
+                      ? "border-[#E1E8ED] bg-[#F7F8FA] text-neutral-600"
+                      : "border-[#362822] bg-[#2A1F1A] text-neutral-300"
+                  }`}
+                >
                   Daily Patrol
                 </span>
               </div>
-              <div className="rounded-xl border border-[#F2E3D3] bg-white p-2.5">
+              <div
+                className={`rounded-xl border p-2.5 transition-colors ${
+                  coatTheme === "white"
+                    ? "border-[#E1E8ED] bg-white text-[#14171A]"
+                    : "border-[#362822] bg-[#231A16] text-[#FFF9F2]"
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10.5px] font-bold text-[#1E1815]">
+                  <span
+                    className={`text-[10.5px] font-bold ${
+                      coatTheme === "white" ? "text-[#14171A]" : "text-[#FFF9F2]"
+                    }`}
+                  >
                     Puspin Discovery
                   </span>
                   <span className="rounded-full bg-[#FFEFE0] px-1.5 py-0.5 text-[9px] font-extrabold text-[#E06D00]">
                     +50
                   </span>
                 </div>
-                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#FFF2E4]">
+                <div
+                  className={`mt-1.5 h-1.5 w-full overflow-hidden rounded-full ${
+                    coatTheme === "white" ? "bg-[#F0F2F5]" : "bg-[#2A1F1A]"
+                  }`}
+                >
                   <div className="h-full w-2/5 rounded-full bg-[#FF8C1A]" />
                 </div>
               </div>

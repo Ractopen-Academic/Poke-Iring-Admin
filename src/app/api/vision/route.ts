@@ -1,5 +1,18 @@
 import { NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebase/admin";
 import { guardRequest } from "@/lib/security/request-guard";
+
+/**
+ * Gemini Vision proxy for the Poke: Iring mobile app.
+ *
+ * Security model:
+ * - GEMINI_API_KEY lives ONLY in Vercel server env (encrypted at rest).
+ *   It is never sent to clients and never placed in a URL (sent as header).
+ * - Every request must carry a valid Firebase ID token
+ *   (`Authorization: Bearer <idToken>`) from a signed-in app user, so random
+ *   internet callers cannot burn the Gemini quota.
+ * - Per-IP rate limiting via guardRequest("vision").
+ */
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,91 +20,27 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: CORS_HEADERS,
-  });
-}
+const MODEL = process.env.GEMINI_VISION_MODEL?.trim() || "gemini-2.5-flash";
+const MIN_CAT_CONFIDENCE = 0.7;
+const MAX_BASE64_LENGTH = 8 * 1024 * 1024; // ~6 MB image
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-export async function POST(request: Request) {
-  const guard = await guardRequest("vision");
-  if (!guard.ok) {
-    return NextResponse.json(
-      { ok: false, error: guard.error },
-      { status: guard.status, headers: CORS_HEADERS }
-    );
-  }
+const PROMPT = `You are a strict image verifier for the Poke: Iring cat-spotting game.
+Players earn real rewards, so be skeptical and never guess.
 
-  const apiKey =
-    process.env.GEMINI_API_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
+Decide whether a REAL, LIVE domestic cat (Felis catus) is clearly visible in this photo.
 
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Gemini Vision proxy is unconfigured. Set GEMINI_API_KEY in server environment variables.",
-      },
-      { status: 503, headers: CORS_HEADERS }
-    );
-  }
+Set "is_cat" to false when ANY of these apply:
+- No cat is visible (people, faces, selfies, dogs, other animals, objects, scenery).
+- The "cat" is a drawing, cartoon, toy, plush, statue, sticker, print, or a photo of a screen/monitor.
+- The image is too dark, blurry, or cropped to be sure.
+- Wild big cats (lion, tiger, leopard) - only domestic cats count.
 
-  let base64Data = "";
-  let mimeType = "image/jpeg";
-
-  const contentType = request.headers.get("content-type") || "";
-
-  if (contentType.includes("multipart/form-data")) {
-    try {
-      const formData = await request.formData();
-      const fileEntry = formData.get("file") || formData.get("image");
-      if (!(fileEntry instanceof File)) {
-        return NextResponse.json(
-          { ok: false, error: "No image file provided in form data." },
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
-      mimeType = fileEntry.type || "image/jpeg";
-      const buffer = Buffer.from(await fileEntry.arrayBuffer());
-      base64Data = buffer.toString("base64");
-    } catch {
-      return NextResponse.json(
-        { ok: false, error: "Failed to parse multipart form data." },
-        { status: 400, headers: CORS_HEADERS }
-      );
-    }
-  } else {
-    try {
-      const body = (await request.json()) as {
-        imageBase64?: string;
-        mimeType?: string;
-      };
-      if (!body.imageBase64 || typeof body.imageBase64 !== "string") {
-        return NextResponse.json(
-          { ok: false, error: "Invalid payload: missing imageBase64 field." },
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
-      base64Data = body.imageBase64;
-      if (body.mimeType) {
-        mimeType = body.mimeType;
-      }
-    } catch {
-      return NextResponse.json(
-        { ok: false, error: "Failed to parse JSON body." },
-        { status: 400, headers: CORS_HEADERS }
-      );
-    }
-  }
-
-  const prompt = `You are an expert feline biologist and Pokemon-style game vision analyzer for the Poke: Iring game.
-Inspect this image and determine if there is a cat visible.
-Return ONLY valid JSON matching this exact structure:
+Return ONLY valid JSON with this exact structure:
 {
   "is_cat": true,
   "confidence": 0.98,
+  "reason": "Short explanation of what is in the image.",
   "breed": "Domestic Shorthair (Puspin)",
   "coat_pattern": "Calico",
   "dominant_color": "Orange and White",
@@ -102,78 +51,153 @@ Return ONLY valid JSON matching this exact structure:
 }
 
 Guidelines:
-- "is_cat": boolean. Set to false if no feline is present.
-- "breed": Use standard breeds. For local stray cats in the Philippines, identify as "Domestic Shorthair (Puspin)" or standard breeds like "Persian", "Siamese", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue".
+- "confidence": 0.0-1.0, your certainty that a real domestic cat is present.
+- "reason": always fill this in, especially when "is_cat" is false (e.g. "Photo shows a person, no cat").
+- "breed": For local stray cats in the Philippines use "Domestic Shorthair (Puspin)", otherwise standard breeds like "Persian", "Siamese", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue".
 - "coat_pattern": "Calico", "Tuxedo", "Orange Tabby", "Brown Tabby", "Tortoiseshell", "Solid Black", "Solid White", "Bicolor", or "Colorpoint".
-- "rarity_multiplier": 1.0 (common), 1.2-1.5 (distinctive markings/patterns like Calico, Tuxedo), 1.6-2.0 (rare or purebred).
-- "pattern_bonus_pts": 10 to 40 bonus points.
-- "box_2d": [ymin, xmin, ymax, xmax] as integers normalized from 0 to 1000 representing the bounding box of the primary cat. If not a cat, set to null.
-- "quirk": Exactly one humorous, charming, or endearing explorer journal observation sentence about what the cat is doing.`;
+- "rarity_multiplier": 1.0 (common), 1.2-1.5 (distinctive markings like Calico, Tuxedo), 1.6-2.0 (rare or purebred).
+- "pattern_bonus_pts": 10 to 40.
+- "box_2d": [ymin, xmin, ymax, xmax] integers normalized 0-1000 for the primary cat, or null if no cat.
+- "quirk": one charming explorer-journal sentence about what the cat is doing (empty string if no cat).`;
+
+function fail(status: number, error: string) {
+  return NextResponse.json(
+    { ok: false, error },
+    { status, headers: CORS_HEADERS }
+  );
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
+export async function POST(request: Request) {
+  const guard = await guardRequest("vision");
+  if (!guard.ok) return fail(guard.status, guard.error || "Request blocked.");
+
+  // Server-only secret. Deliberately NO NEXT_PUBLIC_ fallback: NEXT_PUBLIC_*
+  // values are inlined into the browser bundle and would leak the key.
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    return fail(503, "Vision proxy is not configured on the server.");
+  }
+
+  // 1. Authenticate the app user via Firebase ID token.
+  if (!adminAuth) {
+    return fail(503, "Vision proxy auth is not configured on the server.");
+  }
+  const authHeader = request.headers.get("authorization") || "";
+  const idToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : "";
+  if (!idToken) return fail(401, "Sign in required to verify sightings.");
+  try {
+    await adminAuth.verifyIdToken(idToken);
+  } catch {
+    return fail(401, "Invalid or expired session. Please sign in again.");
+  }
+
+  // 2. Parse image payload (JSON base64 or multipart).
+  let base64Data = "";
+  let mimeType = "image/jpeg";
+  const contentType = request.headers.get("content-type") || "";
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
-      apiKey
-    )}`;
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const fileEntry = formData.get("file") || formData.get("image");
+      if (!(fileEntry instanceof File)) {
+        return fail(400, "No image file provided in form data.");
+      }
+      mimeType = fileEntry.type || "image/jpeg";
+      base64Data = Buffer.from(await fileEntry.arrayBuffer()).toString(
+        "base64"
+      );
+    } else {
+      const body = (await request.json()) as {
+        imageBase64?: unknown;
+        mimeType?: unknown;
+      };
+      if (typeof body.imageBase64 !== "string" || !body.imageBase64) {
+        return fail(400, "Invalid payload: missing imageBase64 field.");
+      }
+      base64Data = body.imageBase64;
+      if (typeof body.mimeType === "string") mimeType = body.mimeType;
+    }
+  } catch {
+    return fail(400, "Failed to parse request body.");
+  }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Data,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          response_mime_type: "application/json",
+  if (!ALLOWED_MIME.has(mimeType)) mimeType = "image/jpeg";
+  if (base64Data.length > MAX_BASE64_LENGTH) {
+    return fail(413, "Image too large. Please use a smaller photo.");
+  }
+
+  // 3. Call Gemini. Key goes in a header, not the URL, so it never lands in logs.
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+        MODEL
+      )}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: PROMPT },
+                { inline_data: { mime_type: mimeType, data: base64Data } },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: AbortSignal.timeout(45_000),
+      }
+    );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Upstream Gemini API error: ${response.status}`,
-          details: errorText,
-        },
-        { status: 502, headers: CORS_HEADERS }
-      );
+      // Log upstream details server-side only; never echo them to clients.
+      console.error("Gemini vision error", response.status, await response.text());
+      return fail(502, "Vision model request failed.");
     }
 
     const data = await response.json();
-    const candidateText =
+    let text: string =
       data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    if (!text) return fail(502, "Empty response from vision model.");
 
-    if (!candidateText) {
+    text = text.replace(/^```[a-zA-Z]*\s*/, "").replace(/```\s*$/, "").trim();
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+
+    // 4. Server-side confidence gate (the client cannot override this).
+    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+    if (parsed.is_cat === true && confidence < MIN_CAT_CONFIDENCE) {
       return NextResponse.json(
-        { ok: false, error: "Empty candidate text returned by model." },
-        { status: 502, headers: CORS_HEADERS }
+        {
+          ok: true,
+          data: {
+            is_cat: false,
+            confidence,
+            reason: `Not sure this is a cat (${Math.round(
+              confidence * 100
+            )}% confidence). Try a clearer, closer photo.`,
+          },
+        },
+        { headers: CORS_HEADERS }
       );
     }
 
-    const parsedJson = JSON.parse(candidateText);
-    return NextResponse.json(
-      { ok: true, data: parsedJson },
-      { headers: CORS_HEADERS }
-    );
+    return NextResponse.json({ ok: true, data: parsed }, { headers: CORS_HEADERS });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { ok: false, error: `Inference failed: ${message}` },
-      { status: 500, headers: CORS_HEADERS }
-    );
+    console.error("Vision inference failed", err);
+    return fail(500, "Vision inference failed.");
   }
 }

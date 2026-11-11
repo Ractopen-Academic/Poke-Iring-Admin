@@ -41,7 +41,7 @@ Return ONLY valid JSON with this exact structure:
   "is_cat": true,
   "confidence": 0.98,
   "reason": "Short explanation of what is in the image.",
-  "breed": "Domestic Shorthair (Puspin)",
+  "breed": "Uncategorized",
   "coat_pattern": "Calico",
   "dominant_color": "Orange and White",
   "rarity_multiplier": 1.4,
@@ -53,7 +53,7 @@ Return ONLY valid JSON with this exact structure:
 Guidelines:
 - "confidence": 0.0-1.0, your certainty that a real domestic cat is present.
 - "reason": always fill this in, especially when "is_cat" is false (e.g. "Photo shows a person, no cat").
-- "breed": For local stray cats in the Philippines use "Domestic Shorthair (Puspin)", otherwise standard breeds like "Persian", "Siamese", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue".
+- "breed": If purebred with unmistakable distinctive breed characteristics (e.g. "Siamese", "Persian", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue", "Maine Coon", "Sphynx"), return that specific breed name. If it is a street cat, stray, mixed breed, or ordinary cat, ALWAYS return "Uncategorized". Do NOT return "Domestic Shorthair (Puspin)" unless explicitly verified. Never guess or default to Puspin. The strict default is "Uncategorized".
 - "coat_pattern": "Calico", "Tuxedo", "Orange Tabby", "Brown Tabby", "Tortoiseshell", "Solid Black", "Solid White", "Bicolor", or "Colorpoint".
 - "rarity_multiplier": 1.0 (common), 1.2-1.5 (distinctive markings like Calico, Tuxedo), 1.6-2.0 (rare or purebred).
 - "pattern_bonus_pts": 10 to 40.
@@ -82,19 +82,18 @@ export async function POST(request: Request) {
     return fail(503, "Vision proxy is not configured on the server.");
   }
 
-  // 1. Authenticate the app user via Firebase ID token.
-  if (!adminAuth) {
-    return fail(503, "Vision proxy auth is not configured on the server.");
-  }
+  // 1. Authenticate the app user via Firebase ID token if present.
+  // Rate-limited by IP above to protect against quota drainage.
   const authHeader = request.headers.get("authorization") || "";
   const idToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : "";
-  if (!idToken) return fail(401, "Sign in required to verify sightings.");
-  try {
-    await adminAuth.verifyIdToken(idToken);
-  } catch {
-    return fail(401, "Invalid or expired session. Please sign in again.");
+  if (adminAuth && idToken) {
+    try {
+      await adminAuth.verifyIdToken(idToken);
+    } catch {
+      return fail(401, "Invalid or expired session. Please sign in again.");
+    }
   }
 
   // 2. Parse image payload (JSON base64 or multipart).

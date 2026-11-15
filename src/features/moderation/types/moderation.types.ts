@@ -39,9 +39,45 @@ export interface ActiveSeasonData {
   status: "active" | "concluded";
 }
 
+export interface ExplorerUserItem {
+  id: string;
+  email: string;
+  displayName: string;
+  photoUrl?: string;
+  role: string;
+  status: "active" | "suspended" | "banned";
+  totalPawPoints: number;
+  totalSnaps: number;
+  distanceKm: number;
+  createdAtIso: string;
+  lastActiveIso: string;
+  banReason?: string;
+  bannedAtIso?: string;
+  bannedBy?: string;
+  suspendedUntilIso?: string;
+}
+
+export interface ExplorerAuditLogItem {
+  id: string;
+  category: "sighting" | "story" | "user" | "suspicious" | "admin";
+  severity: "info" | "warning" | "danger";
+  actorId: string;
+  actorName: string;
+  actorEmail?: string;
+  targetId?: string;
+  action: string;
+  summary: string;
+  details?: Record<string, unknown>;
+  photoUrl?: string;
+  timestampIso: string;
+  flagReason?: string;
+}
+
 export interface ModerationPageData {
   quests: QuestTemplateItem[];
   sightings: CommunitySightingItem[];
   stories: CommunityStoryItem[];
   season: ActiveSeasonData;
+  users: ExplorerUserItem[];
+  auditLogs: ExplorerAuditLogItem[];
 }

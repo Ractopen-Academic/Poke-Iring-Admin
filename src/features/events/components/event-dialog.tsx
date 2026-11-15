@@ -130,6 +130,13 @@ export function EventDialog({
       return;
     }
 
+    if (parsedEnd.getTime() <= Date.now()) {
+      setErrorMessage(
+        "End time cannot be in the past (expired events are automatically hidden from mobile explorers)."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     const clampedMultiplier = Math.min(

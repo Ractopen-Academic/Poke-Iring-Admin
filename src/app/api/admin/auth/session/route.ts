@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { adminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { ADMIN_SESSION_COOKIE, isAdminEmail } from "@/lib/security/auth-guard";
 
-const FIVE_DAYS_MS = 60 * 60 * 24 * 5 * 1000;
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = (await request.json()) as { idToken?: unknown };
     const idToken = typeof body.idToken === "string" ? body.idToken.trim() : "";
 
     if (!idToken) {
@@ -17,75 +16,51 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-
-    // If Firebase Admin credentials are not set (local dev dry-run mode)
     if (!isFirebaseAdminConfigured() || !adminAuth) {
-      cookieStore.set(ADMIN_SESSION_COOKIE, "dev-session-token", {
-        maxAge: FIVE_DAYS_MS / 1000,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        sameSite: "lax",
-      });
-      return NextResponse.json({
-        success: true,
-        email: "admin@pokeiring.app",
-        mode: "development",
-      });
+      return NextResponse.json(
+        { error: "Firebase Admin SDK is not configured on the server." },
+        { status: 503 }
+      );
     }
 
-    // Verify token validity and inspect admin role
-    const decoded = await adminAuth.verifyIdToken(idToken);
-    const email = decoded.email || "";
-
+    const decoded = await adminAuth.verifyIdToken(idToken, true);
     const hasAdminClaim = Boolean(
       decoded.admin === true || decoded.role === "admin"
     );
-    const hasAdminRole = isAdminEmail(email);
-
-    if (!hasAdminClaim && !hasAdminRole) {
+    if (!hasAdminClaim && !isAdminEmail(decoded.email)) {
       return NextResponse.json(
         {
           error:
-            "Forbidden: This account lacks administrative privileges (@iring.ph or admin@pokeiring.app required).",
+            "Forbidden: Account lacks administrative privileges (@iring.ph or admin@pokeiring.app).",
         },
         { status: 403 }
       );
     }
 
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-      expiresIn: FIVE_DAYS_MS,
+      expiresIn: SESSION_DURATION_MS,
     });
 
-    cookieStore.set(ADMIN_SESSION_COOKIE, sessionCookie, {
-      maxAge: FIVE_DAYS_MS / 1000,
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(ADMIN_SESSION_COOKIE, sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      path: "/",
       sameSite: "lax",
+      maxAge: Math.floor(SESSION_DURATION_MS / 1000),
+      path: "/",
     });
-
-    return NextResponse.json({
-      success: true,
-      email,
-    });
-  } catch (err) {
-    console.error("Failed to establish admin session:", err);
+    return response;
+  } catch (error) {
+    console.error("Admin session creation failed", error);
     return NextResponse.json(
-      {
-        error:
-          err instanceof Error
-            ? err.message
-            : "Failed to create verified admin session.",
-      },
+      { error: "Authentication failed. Invalid or expired token." },
       { status: 401 }
     );
   }
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies();
-  cookieStore.delete(ADMIN_SESSION_COOKIE);
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ ok: true });
+  response.cookies.delete(ADMIN_SESSION_COOKIE);
+  return response;
 }

@@ -41,7 +41,7 @@ Return ONLY valid JSON with this exact structure:
   "is_cat": true,
   "confidence": 0.98,
   "reason": "Short explanation of what is in the image.",
-  "breed": "Uncategorized",
+  "breed": "Domestic Shorthair (Puspin)",
   "coat_pattern": "Calico",
   "dominant_color": "Orange and White",
   "rarity_multiplier": 1.4,
@@ -53,8 +53,8 @@ Return ONLY valid JSON with this exact structure:
 Guidelines:
 - "confidence": 0.0-1.0, your certainty that a real domestic cat is present.
 - "reason": always fill this in, especially when "is_cat" is false (e.g. "Photo shows a person, no cat").
-- "breed": If purebred with unmistakable distinctive breed characteristics (e.g. "Siamese", "Persian", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue", "Maine Coon", "Sphynx"), return that specific breed name. If it is a street cat, stray, mixed breed, or ordinary cat, ALWAYS return "Uncategorized". Do NOT return "Domestic Shorthair (Puspin)" unless explicitly verified. Never guess or default to Puspin. The strict default is "Uncategorized".
-- "coat_pattern": "Calico", "Tuxedo", "Orange Tabby", "Brown Tabby", "Tortoiseshell", "Solid Black", "Solid White", "Bicolor", or "Colorpoint".
+- "breed": Identify the specific breed if recognizable (e.g. "Siamese", "Persian", "Bengal", "British Shorthair", "Ragdoll", "Scottish Fold", "Russian Blue", "Maine Coon", "Sphynx", "Abyssinian", "American Shorthair", "Birman", "Bombay"). If it is a street cat, mixed breed, or ordinary domestic shorthair/Puspin, return "Domestic Shorthair (Puspin)" (or "Domestic Longhair" if clearly longhaired). Only return "Uncategorized" if the breed cannot be determined at all.
+- "coat_pattern": Choose the closest match from: "Tabby", "Orange Tabby", "Calico", "Tortoiseshell", "Tuxedo", "Solid Black", "Solid White", "Solid Gray", "Bicolor", "Colorpoint", or "Rosetted".
 - "rarity_multiplier": 1.0 (common), 1.2-1.5 (distinctive markings like Calico, Tuxedo), 1.6-2.0 (rare or purebred).
 - "pattern_bonus_pts": 10 to 40.
 - "box_2d": [ymin, xmin, ymax, xmax] integers normalized 0-1000 for the primary cat, or null if no cat.

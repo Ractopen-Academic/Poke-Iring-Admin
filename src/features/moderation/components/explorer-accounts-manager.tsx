@@ -10,7 +10,6 @@ import {
   Shield,
   ShieldAlert,
   UserCheck,
-  UserX,
 } from "lucide-react";
 import type { ExplorerUserItem } from "../types/moderation.types";
 import {

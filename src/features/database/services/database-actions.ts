@@ -448,6 +448,7 @@ export async function getDashboardTelemetryAction(): Promise<
       }
 
       const actor =
+        (typeof data.authorName === "string" && data.authorName.trim()) ||
         (typeof data.explorerName === "string" && data.explorerName.trim()) ||
         (typeof data.username === "string" && data.username.trim()) ||
         "Explorer";

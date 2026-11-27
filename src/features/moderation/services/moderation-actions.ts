@@ -114,6 +114,7 @@ export async function getModerationDataAction(): Promise<
         "";
       const breed = (typeof d.breed === "string" && d.breed) || "Community Cat";
       const actor =
+        (typeof d.authorName === "string" && d.authorName) ||
         (typeof d.explorerName === "string" && d.explorerName) ||
         (typeof d.username === "string" && d.username) ||
         "Explorer";
@@ -191,10 +192,21 @@ export async function getModerationDataAction(): Promise<
       if (d.status === "banned") status = "banned";
       else if (d.status === "suspended") status = "suspended";
 
-      if (status === "suspended" && d.suspendedUntil) {
-        const untilMs = Date.parse(d.suspendedUntil);
-        if (!Number.isNaN(untilMs) && Date.now() > untilMs) {
-          status = "active";
+      let suspendedUntilIso: string | undefined;
+      if (d.suspendedUntil) {
+        const rawUntil = d.suspendedUntil;
+        const untilMs =
+          typeof rawUntil === "object" &&
+          rawUntil !== null &&
+          "toDate" in rawUntil &&
+          typeof (rawUntil as { toDate?: unknown }).toDate === "function"
+            ? (rawUntil as { toDate: () => Date }).toDate().getTime()
+            : Date.parse(String(rawUntil));
+        if (!Number.isNaN(untilMs)) {
+          suspendedUntilIso = new Date(untilMs).toISOString();
+          if (status === "suspended" && Date.now() > untilMs) {
+            status = "active";
+          }
         }
       }
 
@@ -221,8 +233,7 @@ export async function getModerationDataAction(): Promise<
         banReason: typeof d.banReason === "string" ? d.banReason : undefined,
         bannedAtIso: typeof d.bannedAt === "string" ? d.bannedAt : undefined,
         bannedBy: typeof d.bannedBy === "string" ? d.bannedBy : undefined,
-        suspendedUntilIso:
-          typeof d.suspendedUntil === "string" ? d.suspendedUntil : undefined,
+        suspendedUntilIso,
       };
     });
 

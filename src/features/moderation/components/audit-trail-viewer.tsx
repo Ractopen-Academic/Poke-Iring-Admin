@@ -6,18 +6,12 @@ import {
   Ban,
   Clock,
   Download,
-  Eye,
-  FileText,
   Filter,
-  MapPin,
   Search,
-  Shield,
   ShieldAlert,
   Trash2,
 } from "lucide-react";
 import type {
-  CommunitySightingItem,
-  CommunityStoryItem,
   ExplorerAuditLogItem,
   ExplorerUserItem,
 } from "../types/moderation.types";
@@ -50,12 +44,11 @@ import { Label } from "@/components/ui/label";
 
 interface AuditTrailViewerProps {
   initialLogs: ExplorerAuditLogItem[];
-  users: ExplorerUserItem[];
+  users?: ExplorerUserItem[];
 }
 
 export function AuditTrailViewer({
   initialLogs,
-  users,
 }: AuditTrailViewerProps) {
   const [logs, setLogs] = useState<ExplorerAuditLogItem[]>(initialLogs);
   const [search, setSearch] = useState("");

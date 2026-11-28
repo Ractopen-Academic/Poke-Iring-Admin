@@ -11,8 +11,8 @@ export interface GlobalAppConfig {
 
 export const DEFAULT_APP_CONFIG: GlobalAppConfig = {
   maintenanceMode: false,
-  maintenanceMessage: "The Poke-Iring servers are currently undergoing routine maintenance. Please check back shortly.",
-  minAppVersion: "1.0.0",
+  maintenanceMessage: "Poke: Iring is undergoing routine maintenance. Exploring resumes shortly.",
+  minAppVersion: "0.33.0",
   broadcastBanner: "",
   isBroadcastActive: false,
   doublePointsGlobal: false,

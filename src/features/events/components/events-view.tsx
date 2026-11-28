@@ -55,8 +55,8 @@ export function EventsView({
             Firebase Admin Credentials Not Found
           </div>
           <p className="mt-1 text-neutral-400">
-            Currently running in demonstration mode. To sync live modifications to Cloud Firestore,
-            provide your service account credentials in <code className="text-amber-200">.env.local</code>.
+            Firebase Admin is unconfigured. To sync live modifications to Cloud Firestore,
+            provide your service account credentials in <code className="text-amber-200">.env.local</code> or Vercel environment variables.
           </p>
         </div>
       )}

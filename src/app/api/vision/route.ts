@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase/admin";
+import { getAdminAuth } from "@/lib/firebase/admin";
 import { guardRequest } from "@/lib/security/request-guard";
 
 /**
@@ -88,11 +88,14 @@ export async function POST(request: Request) {
   const idToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : "";
-  if (adminAuth && idToken) {
-    try {
-      await adminAuth.verifyIdToken(idToken);
-    } catch {
-      return fail(401, "Invalid or expired session. Please sign in again.");
+  if (idToken) {
+    const adminAuth = await getAdminAuth();
+    if (adminAuth) {
+      try {
+        await adminAuth.verifyIdToken(idToken);
+      } catch {
+        return fail(401, "Invalid or expired session. Please sign in again.");
+      }
     }
   }
 

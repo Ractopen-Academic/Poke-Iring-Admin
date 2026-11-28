@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { adminAuth, adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { adminDb, getAdminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { guardRequest } from "@/lib/security/request-guard";
 import { isAdminEmail, verifyAdminSession } from "@/lib/security/auth-guard";
 import {
@@ -640,6 +640,7 @@ export async function suspendExplorerAction(
     const cleanReason =
       reason.trim() || "Temporary suspension for explorer safety rules violation.";
 
+    const adminAuth = await getAdminAuth();
     if (adminAuth) {
       try {
         await adminAuth.updateUser(targetUid, { disabled: true });
@@ -732,6 +733,7 @@ export async function banExplorerAction(
     const cleanReason =
       reason.trim() || "Permanent account expulsion for Terms of Service violations.";
 
+    const adminAuth = await getAdminAuth();
     if (adminAuth) {
       try {
         await adminAuth.updateUser(targetUid, { disabled: true });
@@ -803,6 +805,7 @@ export async function unbanExplorerAction(
     const targetEmail = typeof targetData.email === "string" ? targetData.email : "";
     const now = new Date();
 
+    const adminAuth = await getAdminAuth();
     if (adminAuth) {
       try {
         await adminAuth.updateUser(targetUid, { disabled: false });

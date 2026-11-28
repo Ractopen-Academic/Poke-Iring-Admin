@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { ADMIN_SESSION_COOKIE, isAdminEmail } from "@/lib/security/auth-guard";
 
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
@@ -16,6 +16,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const adminAuth = await getAdminAuth();
     if (!isFirebaseAdminConfigured() || !adminAuth) {
       return NextResponse.json(
         { error: "Firebase Admin SDK is not configured on the server." },

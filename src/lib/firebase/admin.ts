@@ -1,6 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
+import type { Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 function formatPrivateKey(key?: string): string | undefined {
@@ -71,9 +71,16 @@ try {
 }
 
 export const adminApp = appInstance;
-export const adminAuth = appInstance
-  ? getAuth(appInstance)
-  : (null as unknown as Auth);
+export async function getAdminAuth(): Promise<Auth | null> {
+  if (!appInstance) return null;
+  try {
+    const { getAuth } = await import("firebase-admin/auth");
+    return getAuth(appInstance);
+  } catch (error) {
+    console.error("Failed to load firebase-admin/auth:", error);
+    return null;
+  }
+}
 export const adminDb = appInstance
   ? getFirestore(appInstance)
   : (null as unknown as Firestore);

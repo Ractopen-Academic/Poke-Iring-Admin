@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { adminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export const ADMIN_SESSION_COOKIE = "admin_session";
 
@@ -46,6 +46,7 @@ export async function verifyAdminSession(): Promise<AuthVerificationResult> {
     return { ok: false, error: "Authentication required. Please log in." };
   }
 
+  const adminAuth = await getAdminAuth();
   if (!isFirebaseAdminConfigured() || !adminAuth) {
     return {
       ok: true,
